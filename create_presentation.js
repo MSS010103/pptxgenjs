@@ -289,16 +289,29 @@ class MediaPresentationGenerator {
       try {
         const base64Data = this.convertToBase64(mediaFile.path);
 
-        // Add image/video with preserved aspect ratio and no sizing constraints
-        slide.addImage({
-          data: base64Data,
-          x: position.x,
-          y: position.y,
-          w: position.w,
-          h: position.h,
-          // Remove sizing property to prevent any scaling/fitting that might affect quality
-          rounding: false, // Ensure no rounding that might affect pixels
-        });
+        if (mediaFile.type === 'video') {
+          // For videos, use addMedia with video type
+          slide.addMedia({
+            type: 'video',
+            data: base64Data,
+            x: position.x,
+            y: position.y,
+            w: position.w,
+            h: position.h,
+            // You can optionally add a poster/thumbnail image here
+            // cover: posterBase64,
+          });
+        } else {
+          // For images, use addImage as before
+          slide.addImage({
+            data: base64Data,
+            x: position.x,
+            y: position.y,
+            w: position.w,
+            h: position.h,
+            rounding: false, // Ensure no rounding that might affect pixels
+          });
+        }
 
         console.log(`Added ${mediaFile.type} to slide:`);
         console.log(
