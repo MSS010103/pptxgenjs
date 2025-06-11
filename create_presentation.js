@@ -5,6 +5,7 @@ const axios = require("axios");
 const ytdl = require("ytdl-core");
 const instagramGetUrl = require("instagram-url-direct");
 
+
 class MediaPresentationGenerator {
   constructor() {
     this.pptx = new PptxGenJS();
@@ -25,6 +26,8 @@ class MediaPresentationGenerator {
       ".flv",
       ".webm",
     ];
+    // Default thumbnail path - you can change this to any image in your media_files folder
+    this.defaultThumbnailPath = path.join(__dirname, "media_files", "knorr.jpg");
   }
 
   // Initialize presentation with basic settings
@@ -274,8 +277,27 @@ class MediaPresentationGenerator {
     return positions;
   }
 
+  // Generate thumbnail from video
+  async generateThumbnail(videoPath) {
+    try {
+      const thumbnailPath = videoPath.replace(/\.[^/.]+$/, "_thumb.jpg");
+      
+      await extractFrames({
+        input: videoPath,
+        output: thumbnailPath,
+        offsets: [0] // Extract first frame
+      });
+
+      console.log(`Generated thumbnail: ${thumbnailPath}`);
+      return thumbnailPath;
+    } catch (error) {
+      console.error("Error generating thumbnail:", error);
+      return null;
+    }
+  }
+
   // Add media to slide with proper positioning and preserved resolution
-  addMediaToSlide(slide, mediaFiles) {
+  async addMediaToSlide(slide, mediaFiles) {
     const mediaCount = Math.min(mediaFiles.length, this.maxMediaPerSlide);
     const positions = this.calculateMediaPositions(
       mediaFiles.slice(0, mediaCount)
@@ -290,16 +312,23 @@ class MediaPresentationGenerator {
         const base64Data = this.convertToBase64(mediaFile.path);
 
         if (mediaFile.type === 'video') {
-          // For videos, use addMedia with video type
+          // Use default thumbnail image
+          let thumbnailBase64 = null;
+          try {
+            thumbnailBase64 = this.convertToBase64(this.defaultThumbnailPath);
+          } catch (error) {
+            console.error("Error loading default thumbnail:", error);
+          }
+
+          // For videos, use addMedia with video type and default thumbnail
           slide.addMedia({
             type: 'video',
             data: base64Data,
+            cover: thumbnailBase64, // Add default thumbnail as cover
             x: position.x,
             y: position.y,
             w: position.w,
             h: position.h,
-            // You can optionally add a poster/thumbnail image here
-            // cover: posterBase64,
           });
         } else {
           // For images, use addImage as before
